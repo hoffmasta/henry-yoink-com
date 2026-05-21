@@ -258,6 +258,8 @@ function periodText(inp) {
         return "the powderpuff game";
     case "CRT":
         return "court presentation";
+    case 'A':
+        return 'Awards'
     //Spiritual Emphasis Cases
     case "SEC":
         return "Spiritual Emphasis Chapel"
