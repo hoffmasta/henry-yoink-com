@@ -1,10 +1,10 @@
 //TODO add passing periods
 function getDay() {
-    let nowThing = getScheduleNow()
+    let nowThing = new Date()
 
     let dateText = (nowThing.getMonth() + 1) + "/" + nowThing.getDate() + "/" + nowThing.getFullYear() 
-    if (specialSchedules[dateText]) return dateText
-const day = getScheduleNow().getDay()
+    if (oshSchedules[dateText]) return dateText
+const day = new Date().getDay()
 switch(day) {
     case 1:
     case 2:
@@ -23,18 +23,18 @@ function timeControls() {
     
 let times = getTimes()
 function getTimes() {
-    return getScheduleForDate(getScheduleNow()) || {}
+    return oshSchedules[getDay()]
 }
 
 function ParseTime(TimeString) {
     let [startTime,endTime] = TimeString.split("-")
     
-    let [startHr,startMin,startSec = 0] = startTime.split(":")
-    let [endHr,endMin,endSec = 0] = endTime.split(":")
-    const start = getScheduleNow()
-    start.setHours(startHr,startMin,startSec,0)
-    const end = getScheduleNow()
-    end.setHours(endHr,endMin,endSec,0)
+    let [startHr,startMin] = startTime.split(":")
+    let [endHr,endMin] = endTime.split(":")
+    const start = new Date()
+    start.setHours(startHr,startMin,0,0)
+    const end = new Date()
+    end.setHours(endHr,endMin,0,0)
     return [start,end]
 }
 function IsNow(TimeString) {
@@ -43,7 +43,7 @@ function IsNow(TimeString) {
         return false
     }
    
-    const now = getScheduleNow()
+    const now = new Date()
     const [start,end] = ParseTime(TimeString)
     if (TimeString == '12:39-1:09') {
         console.log(now,start,end)
@@ -52,14 +52,14 @@ function IsNow(TimeString) {
     return false
 }
 function getRawToStart(TimeString) {
-    const now = getScheduleNow()
+    const now = new Date()
     const [start,end] = ParseTime(TimeString)
     const difference = start - now
 
     return difference
 }
 function getTimeToStart(TimeString) {
-    const now = getScheduleNow()
+    const now = new Date()
     const [start,end] = ParseTime(TimeString)
     const difference = start - now
     const milliseconds = Math.floor(difference)
@@ -70,7 +70,7 @@ function getTimeToStart(TimeString) {
     return [hours % 24,minutes % 60,seconds % 60,milliseconds % 1000]
 }
 function getTimeTo(TimeString) {
-    const now = getScheduleNow()
+    const now = new Date()
     const [start,end] = ParseTime(TimeString)
     const difference = end - now
     const milliseconds = Math.floor(difference)
@@ -81,59 +81,11 @@ function getTimeTo(TimeString) {
     return [hours % 24,minutes % 60,seconds % 60,milliseconds % 1000]
 }
 let suggestedPeriod = false
-const copyNothingPrompts = [
-    "Nothing to See Here",
-    "No Classes Soon",
-    "School is Not in Session",
-    "Enjoy your Free Time"
-]
-let selectedCopyNothingPrompt = null
-let wasOutsideCopyScheduleWindow = false
 function getSuggestedPeriod() {
     for (let period in times) {
         if (IsNow(times[period])) return period
     }
     return false
-}
-function isOutsideScheduleWindow() {
-    const periods = Object.values(times)
-    if (periods.length === 0) return true
-
-    const starts = periods.map(period => ParseTime(period)[0].getTime())
-    const ends = periods.map(period => ParseTime(period)[1].getTime())
-    const now = getScheduleNow().getTime()
-    const twoHours = 2 * 60 * 60 * 1000
-
-    return now <= Math.min(...starts) - twoHours || now >= Math.max(...ends) + twoHours
-}
-function getNextCopySchoolDate() {
-    const candidate = new Date(getScheduleNow())
-    for (let daysAhead = 0; daysAhead < 366; daysAhead += 1) {
-        const schedule = getScheduleForDate(candidate)
-        if (schedule && Object.keys(schedule).length > 0) {
-            if (daysAhead > 0 || getScheduleNow().getTime() < Math.min(...Object.values(schedule).map(period => ParseTime(period)[0].getTime()))) {
-                return candidate.toLocaleDateString(undefined, {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric"
-                })
-            }
-        }
-        candidate.setDate(candidate.getDate() + 1)
-    }
-    return "the next school day"
-}
-function showNothing() {
-    const dayType = getSpecialDayType(getScheduleNow())
-    if (!selectedCopyNothingPrompt) {
-        const randomIndex = Math.floor(Math.random() * copyNothingPrompts.length)
-        selectedCopyNothingPrompt = copyNothingPrompts[randomIndex]
-    }
-    suggestedPeriod = false
-    title.innerText = ""
-    text.dataset.before = dayType || selectedCopyNothingPrompt
-    text.innerText = ""
-    text.dataset.after = `School will be back on ${getNextCopySchoolDate()}`
 }
 let tries = 0
 let broke = false
@@ -151,17 +103,6 @@ function getClosest() {
 }
 let passing = false
 function loop() {
-    if (Object.keys(times).length === 0) return
-    if (isOutsideScheduleWindow()) {
-        if (!wasOutsideCopyScheduleWindow) {
-            showNothing()
-            wasOutsideCopyScheduleWindow = true
-        }
-        return
-    }
-    wasOutsideCopyScheduleWindow = false
-    selectedCopyNothingPrompt = null
-
     if (!suggestedPeriod) suggestedPeriod = getSuggestedPeriod()
 
     let now = IsNow(times[suggestedPeriod])
@@ -270,11 +211,9 @@ function getPeriodFig(period) {
 }
 function displayTime(Time) {
     let [hrs,mins,secs,mils,unit] = FormatTime(Time)
-    const dayType = getSpecialDayType(getScheduleNow())
     text.dataset.before = "You Have"
     text.innerText = `${hrs}${mins}:${secs}:${mils} ${unit}`
-    const specialLabel = dayType ? ` (${dayType})` : ""
-    text.dataset.after = `Until ${getPeriodFig(suggestedPeriod)}${specialLabel}`
+    text.dataset.after = `Until ${getPeriodFig(suggestedPeriod)}`
 }
 function titleUpdate(time) {
     if (!times[suggestedPeriod]) return

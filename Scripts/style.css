@@ -454,8 +454,6 @@ div#text > .icecream:nth-child(3) {
 }
 #count-down {
     display: flex;
-    justify-content: center;
-    align-items: center;
     position: absolute;
     width: auto;
     aspect-ratio: 1.5/1;
@@ -483,4 +481,7 @@ div#text > .icecream:nth-child(3) {
 }
 #count-text.very-compact {
     font-size: 85% !important;
+    position: absolute;
+    top: 0px;
+    cursor: pointer;
 }

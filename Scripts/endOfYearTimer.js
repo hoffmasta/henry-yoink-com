@@ -1,51 +1,7 @@
 const counter = document.getElementById("count-text")
-const countDown = document.getElementById("count-down")
 let counterMode = 0 //0 = days, 1 = hours
-let csvText = "";
-// 1. Fetches CSV text and finds the row index
-async function findRowIndexFromServer(filePath) {
-  csvText = loadDatabaseText(filePath.endsWith('.csv') ? filePath : `${filePath}.csv`, "countdown");
-  const rows = csvText.replace(/\r/g, "").split('\n').filter(r => r.trim());
-    return rows.findIndex(r => r.split(',')[0].trim() === String(window.selectedCSVOption).trim());
-}
-
-// 2. Returns a column value based on row index
-function getColumnValue(csvText, rowIndex, columnIndex) {
-    if (!csvText || rowIndex === -1) return null;
-    const rows = csvText.replace(/\r/g, "").split('\n').filter(r => r.trim());
-  return rows[rowIndex]?.split(',')[columnIndex]?.replace(/^"|"$/g, "").trim() || null;
-}
-
-function getFirstColumnValue(csvText, rowIndex) {
-  return getColumnValue(csvText, rowIndex, 0);
-}
-
-function displayCountdown(time, value) {
-  counter.classList.toggle("compact", value.length > 18);
-  counter.classList.toggle("very-compact", value.length > 28);
-  counter.innerHTML = time;
-}
-
-async function getSelectedCountdown() {
-  const index = await findRowIndexFromServer("Databases Local/CountDownToDate.csv");
-  const dateValue = getColumnValue(csvText, index, 3);
-  const timeValue = getColumnValue(csvText, index, 4);
-  const targetDate = dateValue && timeValue ? new Date(`${dateValue} ${timeValue}`) : null;
-
-  if (!targetDate || Number.isNaN(targetDate.getTime())) {
-    return null;
-  }
-
-  return {
-    date: targetDate,
-    value: getFirstColumnValue(csvText, index) || "Select a countdown"
-  };
-}
-async function calculateTimeToEndHours() {  
-  const selectedCountdown = await getSelectedCountdown()
-  if (!selectedCountdown) return
-
-  const dif = selectedCountdown.date.getTime() - Date.now()
+function calculateTimeToEndHours() {  
+  const dif = new Date("May 30, 2026 15:25:00").getTime() - Date.now()
   const date = new Date().setTime(dif)
 
   const hours = ((dif / 1000) / 3600)
@@ -58,16 +14,11 @@ async function calculateTimeToEndHours() {
   const minute = Math.floor(minutes)
   const second = Math.floor(seconds)
 
-  const value = selectedCountdown.value;
-  const time = `${hour}:${minute.toString().padStart(2, "0")}:${second.toString().padStart(2, "0")}<br>${value}`;
-  displayCountdown(time, value);
-
+  const time = `${hour}:${minute}:${second}<br>Until the end of the year`
+  counter.innerHTML = time
 }
-async function calculateTimeToEndDays() {
-  const selectedCountdown = await getSelectedCountdown()
-  if (!selectedCountdown) return
-
-  const dif = selectedCountdown.date.getTime() - Date.now()
+function calculateTimeToEndDays() {
+  const dif = new Date("May 30, 2026 15:25:00").getTime() - Date.now()
   const date = new Date().setTime(dif)
 
   const days = ((dif / 1000) / (3600*24))
@@ -83,17 +34,10 @@ async function calculateTimeToEndDays() {
   const minute = Math.floor(minutes)
   const second = Math.floor(seconds)
 
-  const value = selectedCountdown.value;
-  const time = `${day} days and ${hour}:${minute.toString().padStart(2, "0")}:${second.toString().padStart(2, "0")} hours<br>${value}`;
-  displayCountdown(time, value);
+  const time = `${day} days and ${hour}:${minute}:${second} hours<br>Until the end of the year`
+  counter.innerHTML = time
 }
 function calculateTimeToEnd(){
-  const hasSelection = Boolean(String(window.selectedCSVOption || "").trim())
-  countDown.style.display = hasSelection ? "" : "none"
-  if (!hasSelection) {
-    return
-  }
-
   switch (counterMode) {
     case 0:
       calculateTimeToEndDays()

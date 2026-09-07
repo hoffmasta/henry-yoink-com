@@ -816,7 +816,7 @@ function PlaySkeletonsMusic() {
 function Thanksgiving() {
     let video = document.getElementById('video')
     let source = document.getElementById('source')
-    source.src = 'Videos/charlie brown.mp4'
+    source.src = 'charlie brown.mp4'
     video.style.display = 'block'
     video.load()
     video.play()
@@ -885,7 +885,7 @@ function Christmas() {
 function Cranberry() {
     let video = document.getElementById('video')
     let source = document.getElementById('source')
-    source.src = 'Videos/cranberry.mp4'
+    source.src = 'cranberry.mp4'
     video.style.display = 'block'
     video.load()
     video.play()

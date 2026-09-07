@@ -9,22 +9,14 @@ const spanish = document.getElementById("span")
 var whileCount = 0;
 const loopDelay = 500;
 const endPrompts = [["School's out, it's time to", "celebrate!", "No more homework, isn't that great?", ], ["Done with classes, it's", "time to shine!", "Enjoy the free time."], ["School's over, it's", "party time!", "Celebrate the day's uphill climb."], ["Out of school, now it's", "chillaxing!", "No more textbooks, it's relaxing.", ], ["No more lectures, it's", "fun o'clock!", "Enjoy the freedom around the block.", ], ["School's out, it's", "time to roam!", "No more classrooms, head home."], ["School's out, time to", "laugh and play!", "Leave the stress far, far away.", ], ["School's out, it's time to", "celebrate!", "No more school, that's pretty great.", ], ["Done with school, it's", "time to unwind!", "Relax and leave your stress behind.", ], ["School's over, it's", "party time!", "Celebrate the day, it's all prime."], ["Out of school, now it's", "chill and cheer!", "No more textbooks, the coast is clear.", ], ["No more lectures, it's", "fun o'clock!", "Enjoy the evening, let your laughter rock.", ], ["School's out, it's", "time to thrive!", "No more classes, embrace the vibe.", ], ];
-const nothingPrompts = [
-    ["Nothing to See Here", "", ""],
-    ["No Classes Right Now", "", ""],
-    ["Enjoy your Free Time", "", ""]
-];
-let selectedNothingPrompt = null;
-let wasOutsideScheduleWindow = false;
 const spanPrompts = [["Escuela está acaba, es la hora para", "Celebrar!", "No más terea. Está bien?", ], ];
 const plcDates = ["9/25/2024",'11/13/2024','1/22/2025','2/5/2025','3/12/2025','4/9/2025',];
 const plcRegex = new RegExp("^" + plcDates.join("|^"),"gm");
 const spiritWeekDates = ["9/18", "9/19", "9/20", "9/21", "9/22"];
 const spRegex = new RegExp("^" + spiritWeekDates.join("|^"),"gm");
-const lastEndOfDaySpeed = 5000;
-var testDate = scheduleTestDate;
+var testDate;
 // testDate = new Date("9/22/2023 15:00");
-var now = getScheduleNow();
+var now = new Date();
 if (testDate) {
     now = testDate;
 }
@@ -34,7 +26,6 @@ var currentHour = now.getHours();
 var currentYear = now.getFullYear();
 var weekday = now.getDay();
 var adjTime = 0;
-let lastEndPromptUpdate = 0;
 // var weekday = "test";
 
 function timeText(h, m) {
@@ -43,18 +34,14 @@ function timeText(h, m) {
 
 schedulePrompt = function(b, t, a) {
     element = document.querySelector("#prompt");
-    const dayType = getSpecialDayType(getScheduleNow());
-    const displayedAfter = times && times.length > 0 && dayType
-        ? `${a} (${dayType})`
-        : a;
     if (element.innerText !== t) {
         element.innerText = t;
     }
     if (element.dataset.before !== b) {
         element.dataset.before = b;
     }
-    if (element.dataset.after !== displayedAfter) {
-        element.dataset.after = displayedAfter;
+    if (element.dataset.after !== a) {
+        element.dataset.after = a;
     }
     if (!(b + t + a).includes("nothing")) {
         document.title = minuteTime(minute);
@@ -72,66 +59,36 @@ let schedules = oshSchedules;
 // let schedules = neenSchedules;
 
 var timeDict, times;
-function isHTimeOutsideScheduleWindow() {
-    if (!times || times.length === 0) return true;
-
-    const toMinutes = time => {
-        const [hours, minutes] = time.split(":").map(Number);
-        return hours * 60 + minutes;
-    };
-    const firstStart = Math.min(...times.map(period => toMinutes(period[0])));
-    const lastEnd = Math.max(...times.map(period => toMinutes(period[1])));
-    const nowMinutes = getScheduleNow().getHours() * 60 + getScheduleNow().getMinutes();
-    const twoHours = 2 * 60;
-
-    return nowMinutes <= firstStart - twoHours || nowMinutes >= lastEnd + twoHours;
-}
-function getNextSchoolDate() {
-    const candidate = new Date(getScheduleNow());
-    for (let daysAhead = 0; daysAhead < 366; daysAhead += 1) {
-        const schedule = getScheduleForDate(candidate);
-        if (schedule && Object.keys(schedule).length > 0) {
-            const firstStart = Math.min(...Object.values(schedule).map(period => {
-                const [hours, minutes] = period.split("-")[0].split(":").map(Number);
-                return hours * 60 + minutes;
-            }));
-            if (daysAhead > 0 || getScheduleNow().getHours() * 60 + getScheduleNow().getMinutes() < firstStart) {
-                return candidate.toLocaleDateString(undefined, {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric"
-                });
-            }
-        }
-        candidate.setDate(candidate.getDate() + 1);
-    }
-    return "the next school day";
-}
-function showNothingPrompt() {
-    const dayType = getSpecialDayType(getScheduleNow());
-    if (dayType) {
-        schedulePrompt(dayType, "", `School will be back on ${getNextSchoolDate()}`);
-        return;
-    }
-    if (!selectedNothingPrompt) {
-        const randomIndex = Math.floor(Math.random() * nothingPrompts.length);
-        selectedNothingPrompt = nothingPrompts[randomIndex];
-    }
-    schedulePrompt(selectedNothingPrompt[0], selectedNothingPrompt[1], `School will be back on ${getNextSchoolDate()}`);
-}
 function updateDay() {
-    const scheduleForDate = getScheduleForDate(getScheduleNow());
-    if (specialSchedules[dateText] && !normalScheduleDates[dateText]) {
-        timeDict = specialSchedules[dateText];
-    } else if (plcDates.includes(dateText) && schedules.plc) {
+    if (plcDates.includes(dateText)) {
         timeDict = schedules['plc']
+    } else if (schedules[dateText]) {
+        timeDict = schedules[dateText];
     } else {
-        timeDict = scheduleForDate;
-        if (!timeDict) {
+        switch (weekday) {
+        case 1:
+            timeDict = schedules.mtth;
+            break;
+        case 2:
+            timeDict = schedules.mtth;
+            break;
+        case 3:
+            timeDict = schedules.w;
+            break;
+        case 4:
+            timeDict = schedules.mtth;
+            break;
+        case 5:
+            timeDict = schedules.f;
+            break;
+        case "test":
+            timeDict = schedules.test;
+            break;
+        default:
             if (spanish.checked) {
-                showNothingPrompt();
+                schedulePrompt("Lo siento, pero hay","nada","hacer hoy")
             } else {
-                showNothingPrompt();
+                schedulePrompt("Sorry, but there's", "nothing", "coming up today");
             }
             document.querySelector("#prompt").onclick = "";
             document.title = "Schedule";
@@ -150,22 +107,14 @@ function updateDay() {
 let minute, hour, timeout;
 let style = 1;
 function update() {
-    date = getScheduleNow();
+    date = new Date();
+    if (testDate) {
+        date = testDate;
+    }
     //Comment out the line below to stop testing a specific time
     // date = new Date("4/6/2023 12:03");
 
-    if (isHTimeOutsideScheduleWindow()) {
-        if (!wasOutsideScheduleWindow) {
-            showNothingPrompt();
-            wasOutsideScheduleWindow = true;
-        }
-        document.title = "Schedule";
-        return;
-    }
-    wasOutsideScheduleWindow = false;
-    selectedNothingPrompt = null;
-
-    if (now.getDay() !== getScheduleNow().getDay() && !testDate) {
+    if (now.getDay() !== new Date().getDay() && !testDate) {
         updateDay();
     }
 
@@ -193,7 +142,7 @@ function update() {
 
                             return schedulePrompt("You have", minuteText(minute).toLowerCase(), "until " + periodFig + " starts");
                         case 1:
-                            let time = nowHour + Math.trunc(minute / 60) + ":" + (minute - 60 * hour + nowMinute).toString().padStart(2, "0") + ":" + (60 - getScheduleNow().getSeconds()).toString().padStart(2, "0");
+                            let time = nowHour + Math.trunc(minute / 60) + ":" + (minute - 60 * hour + nowMinute) + ":" + (60 - new Date().getSeconds());
                             if (spanish.checked) return schedulePrompt("Tienes", minuteTime(minute), "hasta " + periodFig + " empieza") 
                             return schedulePrompt("You have", minuteTime(minute), "until " + periodFig + " starts");
                         }
@@ -212,8 +161,6 @@ function update() {
         }
         minute += 1;
         if (minute / 60 + nowHour > 24) {
-            if (Date.now() - lastEndPromptUpdate < lastEndOfDaySpeed) return;
-            lastEndPromptUpdate = Date.now();
             if (spanish.checked) { 
                 const randomIndex = Math.floor(Math.random() * spanPrompts.length);
                 schedulePrompt(spanPrompts[randomIndex][0], spanPrompts[randomIndex][1], spanPrompts[randomIndex][2]);
@@ -264,22 +211,62 @@ function minuteText(num) {
 }
 
 function minuteTime(num) {
-    let hourT = "";
+    let hourT = (minuteT = "");
     if (Math.trunc(minute / 60) !== 0) {
         hourT = Math.trunc(minute / 60) + ":";
     }
     minuteT = minute - 60 * Math.trunc(minute / 60) - 1;
-    let secondT = (60 - getScheduleNow().getSeconds()).toString().padStart(2, "0");
+    let secondT = (60 - new Date().getSeconds()).toString().padStart(2, "0");
     if (secondT === "60") {
         secondT = "00";
         minuteT += 1;
     }
 
-    return hourT + minuteT.toString().padStart(2, "0") + ":" + secondT;
+    return hourT + minuteT + ":" + secondT;
 }
 
 function periodText(inp) {
-    return periodTextMap[String(inp).trim().toUpperCase()] || inp + "th period";
+    switch (inp) {
+    case "C":
+        return "Chapel";
+    case "D":
+        return "D-Groups";
+    case 'WC': 
+        return 'Warrior Time'
+    case "CD":
+        return "Chapel/D-Groups";
+    case "L":
+        return "Lunch";
+    case "BH":
+        return "You have to check in"
+    case "H":
+        return "H-Hour";
+    case "1":
+        return "1st period";
+    case "2":
+        return "2nd period";
+    case "3":
+        return "3rd period";
+    case "R":
+        return "Recess";
+    case "0":
+        return "H-Hour/D-Groups";
+        //Spirit Week cases
+    case "SP-M":
+        return "volleyball";
+    case "SP-W":
+        return "the powderpuff game";
+    case "CRT":
+        return "court presentation";
+    case 'A':
+        return 'Awards'
+    //Spiritual Emphasis Cases
+    case "SEC":
+        return "Spiritual Emphasis Chapel"
+    //Default case
+    default:
+        return inp + "th period";
+    }
 }
 
 function toggleStyle() {
